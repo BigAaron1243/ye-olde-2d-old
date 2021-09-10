@@ -11,6 +11,8 @@ class Wall {
         std::vector<double> a, b;
         void set_values(double, double, double, double, int);
         std::vector<std::vector<float>> edge;
+        double get_angle();
+        double get_gradient();
 };
 
 void Wall::set_values (double ax, double ay, double bx, double by, int setresolution) {
@@ -22,6 +24,15 @@ void Wall::set_values (double ax, double ay, double bx, double by, int setresolu
     }
     a = {ax, ay};
     b = {bx, by};
+}
+
+double Wall::get_gradient () {
+return (b[1] - a[1]) / (b[0] - a[0]);
+}
+
+
+double Wall::get_angle () {
+    return atan2((b[1] - a[1]), (b[0] - a[0]));
 }
 
 int rounder(float d)
@@ -45,7 +56,7 @@ class Circle {
         double r, x, y, m, u, perimeter;
         double vx = 0;
         double vy = 0;
-        double instantaneous_collision_angle, instantaneous_collision_velocity, instantaneous_displacement;
+        double instantaneous_collision_angle, instantaneous_collision_velocity, instantaneous_displacement, normal_angle, reflection_angle;
         bool enable_gravity, _static;
         bool collision = false;
         int collision_cooldown = 0;
@@ -53,7 +64,18 @@ class Circle {
         std::vector<std::vector<float>> edge;
         void calculate_new_position(double, double);
         double velocity();
+        double vector_angle();
 };
+
+double Circle::vector_angle() {
+    double temp_angle = atan2(vy, vx);
+    if (temp_angle > 0) {
+        return temp_angle;
+    } else {
+        return temp_angle + (2 * M_PI);
+    }
+
+}
 
 double Circle::velocity() {
     return sqrt(pow(vx, 2) + pow(vy, 2));
@@ -127,21 +149,26 @@ int main()
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     std::vector<Circle> circle_list;
     std::vector<Wall> wall_list;
-    Circle ball_3;
-    ball_3.set_values(5,60,5,1,300, false, false);
-    ball_3.vy = 5;
-    circle_list.push_back(ball_3);
-    Circle ball;
-    ball.set_values(5,0,100,1,300, true, false);
-    ball.vx = 5;
-    circle_list.push_back(ball);
+
+    Wall floor;
+    floor.set_values(0, 5, 100, 5, 100);
+    wall_list.push_back(floor);
+
+    //Circle ball_3;
+    //ball_3.set_values(5,60,5,1,300, false, false);
+    //ball_3.vy = 5;
+    //circle_list.push_back(ball_3);
+    //Circle ball;
+    //ball.set_values(5,0,100,1,300, true, false);
+    //ball.vx = 5;
+    //circle_list.push_back(ball);
     Circle ball_2;
-    ball_2.set_values(5,100,120,1,300, true, false);
-    ball_2.vx = -5;
+    ball_2.set_values(5,82,120,1,300, false, false);
+    ball_2.vy = -3;
     circle_list.push_back(ball_2);
 
     Circle ball_1;
-    ball_1.set_values(10,50,30,1,300, false, true);
+    ball_1.set_values(10,50,30,3,300, false, false);
     circle_list.push_back(ball_1);
     int canvas[100][100] = {0};
 
@@ -183,22 +210,43 @@ int main()
                 double distance = pow(distance_xy[0], 2) + pow(distance_xy[1], 2);
                 if ((j != i) && (sum_radius > distance) && collision == false && circle_list[i].collision_cooldown < 1) {
                     circle_list[i].collision_cooldown = 10;
-                    circle_list[j].collision_cooldown = 10;
+                    //circle_list[j].collision_cooldown = 10;
                     circle_list[i].collision = true;
-                    circle_list[j].collision = true;
+                    //circle_list[j].collision = true;
                     //circle_list[i].instantaneous_displacement = sum_radius - distance;
                     //circle_list[j].instantaneous_displacement = sum_radius - distance;
                     circle_list[i].instantaneous_collision_velocity =  sqrt(pow(circle_list[j].vx, 2) + pow(circle_list[j].vy, 2)) + sqrt(pow(circle_list[i].vx, 2) + pow(circle_list[i].vy, 2)) * .5;
-                    circle_list[j].instantaneous_collision_velocity =  sqrt(pow(circle_list[j].vx, 2) + pow(circle_list[j].vy, 2)) + sqrt(pow(circle_list[i].vx, 2) + pow(circle_list[i].vy, 2)) * .5;
+                    //circle_list[j].instantaneous_collision_velocity =  sqrt(pow(circle_list[j].vx, 2) + pow(circle_list[j].vy, 2)) + sqrt(pow(circle_list[i].vx, 2) + pow(circle_list[i].vy, 2)) * .5;
                     double collision_angle = get_collision_angle_radians(sum_radius, distance_xy);
                     circle_list[i].instantaneous_collision_angle = collision_angle;
-                    if (collision_angle > 1) {
-                        circle_list[j].instantaneous_collision_angle = collision_angle - (M_PI);
-                    } else {
-                        circle_list[j].instantaneous_collision_angle = collision_angle + (M_PI);
-                    }
+                    set_console_cursor(210, 5, hConsole);
+                    double b = (circle_list[i].vector_angle() - M_PI) - circle_list[i].instantaneous_collision_angle;
+                    circle_list[i].reflection_angle = circle_list[i].instantaneous_collision_angle - b;
+                    std::cout << circle_list[i].instantaneous_collision_angle << ", " << circle_list[i].vector_angle() << ", " << circle_list[i].vx << ", " << circle_list[i].vy << ", " << circle_list[i].reflection_angle << ", " << b;
+                    set_console_cursor(circle_list[i].x * 2, circle_list[i].y * 2, hConsole);
+                    std::cout << "+";
+                    //_sleep(500);
+                    //if (collision_angle > 1) {
+                    //    circle_list[j].instantaneous_collision_angle = circle_list[i].instantaneous_collision_angle - (M_PI);
+                    //} else {
+                    //    circle_list[j].instantaneous_collision_angle = circle_list[i].instantaneous_collision_angle - (M_PI);
+                    //}
                 }
             }
+           // for (size_t j = 0; j < wall_list.size(); j++) {
+               // int setrays = 20;
+                //for (int k = 0; k < setrays; k++) {
+                    //if (((sin(k*((2*M_PI)/setrays)) * circle_list[i].r + circle_list[i].x - wall_list[j].a[0]) * wall_list[j].get_gradient() >  cos(k*((2*M_PI)/setrays)) * circle_list[i].r + circle_list[i].y -1 && sin(k*((2*M_PI)/setrays)) * circle_list[i].r + circle_list[i].x - wall_list[j].a[0]) * wall_list[j].get_gradient() <  cos(k*((2*M_PI)/setrays)) * circle_list[i].r + circle_list[i].y +1) {
+                    //    set_console_cursor(210, 5, hConsole);
+                    //    std::cout << "NGGER";
+                    //}
+                    //double wally = (circle_list[i].x - wall_list[j].a[0]) * wall_list[j].get_gradient();
+                    //if (wally + 1 + (sin(k*((2*M_PI)/setrays)) * circle_list[i].r) > circle_list[i].y + (cos(k*((2*M_PI)/setrays)) * circle_list[i].r) && wally - 1 + (sin(k*((2*M_PI)/setrays)) * circle_list[i].r) < circle_list[i].y + (cos(k*((2*M_PI)/setrays)) * circle_list[i].r)) {
+                    //    double b = circle_list[i].vector_angle() - M_PI - (wall_list[j].get_angle() + (M_PI * 0.5));
+                    //    circle_list[i].reflection_angle = circle_list[i].instantaneous_collision_angle - b;
+                    //}
+               // }
+            //}
         }
 
         set_console_cursor(0, 1, hConsole);
@@ -211,10 +259,10 @@ int main()
                 circle_list[i].vy -= 9.8 * delta_time.count() / 1000000;
             }
             if (circle_list[i]._static == false && circle_list[i].collision == true) {
-                circle_list[i].x += cos(circle_list[i].instantaneous_collision_angle) * circle_list[i].instantaneous_displacement;
-                circle_list[i].y += sin(circle_list[i].instantaneous_collision_angle) * circle_list[i].instantaneous_displacement;
-                circle_list[i].vx = cos(circle_list[i].instantaneous_collision_angle) * circle_list[i].instantaneous_collision_velocity;
-                circle_list[i].vy = sin(circle_list[i].instantaneous_collision_angle) * circle_list[i].instantaneous_collision_velocity;
+                circle_list[i].x += cos(circle_list[i].reflection_angle) * circle_list[i].instantaneous_displacement + 0.01;
+                circle_list[i].y += sin(circle_list[i].reflection_angle) * circle_list[i].instantaneous_displacement + 0.01;
+                circle_list[i].vx = cos(circle_list[i].reflection_angle) * circle_list[i].instantaneous_collision_velocity * 0.5 * (1/circle_list[i].m);
+                circle_list[i].vy = sin(circle_list[i].reflection_angle) * circle_list[i].instantaneous_collision_velocity * 0.5 * (1/circle_list[i].m);
                 circle_list[i].collision = false;
             }
             circle_list[i].calculate_new_position(delta_time.count(), pixels_per_metre);
