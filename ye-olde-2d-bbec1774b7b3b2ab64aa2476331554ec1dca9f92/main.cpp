@@ -65,6 +65,7 @@ class Circle {
         void calculate_new_position(double, double);
         double velocity();
         double vector_angle();
+        int neg = 1;
 };
 
 double Circle::vector_angle() {
@@ -154,18 +155,18 @@ int main()
     floor.set_values(0, 5, 100, 5, 100);
     wall_list.push_back(floor);
 
-    //Circle ball_3;
-    //ball_3.set_values(5,60,5,1,300, false, false);
-    //ball_3.vy = 5;
-    //circle_list.push_back(ball_3);
-    //Circle ball;
-    //ball.set_values(5,0,100,1,300, true, false);
-    //ball.vx = 5;
-    //circle_list.push_back(ball);
     Circle ball_2;
-    ball_2.set_values(5,82,120,1,300, false, false);
+    ball_2.set_values(5,82,90,0.5,300, false, false);
     ball_2.vy = -3;
     circle_list.push_back(ball_2);
+    Circle ball_3;
+    ball_3.set_values(5,60,5,1,300, false, false);
+    ball_3.vy = 5;
+    circle_list.push_back(ball_3);
+    Circle ball;
+    ball.set_values(5,0,100,1,300, true, false);
+    ball.vx = 5;
+    circle_list.push_back(ball);
 
     Circle ball_1;
     ball_1.set_values(10,50,30,3,300, false, false);
@@ -200,6 +201,7 @@ int main()
         }
         //int lolcount;
         bool collision = false;
+
         for (size_t i = 0; i < circle_list.size(); i++) {
             for (size_t j = 0; j < circle_list.size(); j++) {
                 double angle_of_bounce = 0;
@@ -225,6 +227,23 @@ int main()
                     std::cout << circle_list[i].instantaneous_collision_angle << ", " << circle_list[i].vector_angle() << ", " << circle_list[i].vx << ", " << circle_list[i].vy << ", " << circle_list[i].reflection_angle << ", " << b;
                     set_console_cursor(circle_list[i].x * 2, circle_list[i].y * 2, hConsole);
                     std::cout << "+";
+
+                    circle_list[i].neg = 1;
+                    if (circle_list[i].vx > 0.01 && circle_list[j].vx > 0.01 ) {
+                        //circle_list[i].reflection_angle = circle_list[i].reflection_angle + M_PI;
+                        circle_list[i].neg = -1;
+                    } else if (circle_list[i].vy > 0.01 && circle_list[j].vy > 0.01 ) {
+                        //circle_list[i].reflection_angle = circle_list[i].reflection_angle + M_PI;
+                        circle_list[i].neg = -1;
+                    }
+                    if (circle_list[i].vx < -0.01 && circle_list[j].vx < -0.01 ) {
+                        //circle_list[i].reflection_angle = circle_list[i].reflection_angle + M_PI;
+                        circle_list[i].neg = -1;
+                    } else if (circle_list[i].vy < -0.01 && circle_list[j].vy < -0.01 ) {
+                        //circle_list[i].reflection_angle = circle_list[i].reflection_angle + M_PI;
+                        circle_list[i].neg = -1;
+                    }
+
                     //_sleep(500);
                     //if (collision_angle > 1) {
                     //    circle_list[j].instantaneous_collision_angle = circle_list[i].instantaneous_collision_angle - (M_PI);
@@ -238,7 +257,7 @@ int main()
                 //for (int k = 0; k < setrays; k++) {
                     //if (((sin(k*((2*M_PI)/setrays)) * circle_list[i].r + circle_list[i].x - wall_list[j].a[0]) * wall_list[j].get_gradient() >  cos(k*((2*M_PI)/setrays)) * circle_list[i].r + circle_list[i].y -1 && sin(k*((2*M_PI)/setrays)) * circle_list[i].r + circle_list[i].x - wall_list[j].a[0]) * wall_list[j].get_gradient() <  cos(k*((2*M_PI)/setrays)) * circle_list[i].r + circle_list[i].y +1) {
                     //    set_console_cursor(210, 5, hConsole);
-                    //    std::cout << "NGGER";
+                    //    std::cout << "";
                     //}
                     //double wally = (circle_list[i].x - wall_list[j].a[0]) * wall_list[j].get_gradient();
                     //if (wally + 1 + (sin(k*((2*M_PI)/setrays)) * circle_list[i].r) > circle_list[i].y + (cos(k*((2*M_PI)/setrays)) * circle_list[i].r) && wally - 1 + (sin(k*((2*M_PI)/setrays)) * circle_list[i].r) < circle_list[i].y + (cos(k*((2*M_PI)/setrays)) * circle_list[i].r)) {
@@ -255,17 +274,38 @@ int main()
         auto delta_time = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
         total_time += delta_time.count();
         for (size_t i = 0; i < circle_list.size(); i++) {
+            double movement_mod = 5;
+            double speed_decay = 0.003;
+            if (GetAsyncKeyState(VK_UP) < 0) {
+                circle_list[0].vy += movement_mod * delta_time.count() / 1000000;
+            } if (GetAsyncKeyState(VK_DOWN) < 0) {
+                circle_list[0].vy -= movement_mod * delta_time.count() / 1000000;
+            } if (GetAsyncKeyState(VK_LEFT) < 0) {
+                circle_list[0].vx -= movement_mod * delta_time.count() / 1000000;
+            } if (GetAsyncKeyState(VK_RIGHT) < 0) {
+                circle_list[0].vx += movement_mod * delta_time.count() / 1000000;
+            } if (GetAsyncKeyState(VK_LCONTROL) < 0) {
+                circle_list[0].enable_gravity = true;
+            }
             if (circle_list[i].enable_gravity == true) {
                 circle_list[i].vy -= 9.8 * delta_time.count() / 1000000;
             }
             if (circle_list[i]._static == false && circle_list[i].collision == true) {
                 circle_list[i].x += cos(circle_list[i].reflection_angle) * circle_list[i].instantaneous_displacement + 0.01;
                 circle_list[i].y += sin(circle_list[i].reflection_angle) * circle_list[i].instantaneous_displacement + 0.01;
-                circle_list[i].vx = cos(circle_list[i].reflection_angle) * circle_list[i].instantaneous_collision_velocity * 0.5 * (1/circle_list[i].m);
-                circle_list[i].vy = sin(circle_list[i].reflection_angle) * circle_list[i].instantaneous_collision_velocity * 0.5 * (1/circle_list[i].m);
+                circle_list[i].vx = cos(circle_list[i].reflection_angle) * circle_list[i].neg * circle_list[i].instantaneous_collision_velocity * 0.5 * (1/circle_list[i].m);
+                circle_list[i].vy = sin(circle_list[i].reflection_angle) * circle_list[i].neg * circle_list[i].instantaneous_collision_velocity * 0.5 * (1/circle_list[i].m);
                 circle_list[i].collision = false;
             }
             circle_list[i].calculate_new_position(delta_time.count(), pixels_per_metre);
+            if (circle_list[i].x > 100) {circle_list[i].vx = -circle_list[i].vx;}
+            if (circle_list[i].x < 0) {circle_list[i].vx = -circle_list[i].vx;}
+            if (circle_list[i].y > 100) {circle_list[i].vy = -circle_list[i].vy;}
+            if (circle_list[i].y < 0) {circle_list[i].vy = -circle_list[i].vy;}
+            //if (circle_list[i].vx > 0) {circle_list[i].vx += speed_decay * circle_list[i].vx;}
+            //if (circle_list[i].vx < 0) {circle_list[i].vx -= speed_decay * circle_list[i].vx;}
+            //if (circle_list[i].vy > 0) {circle_list[i].vy += speed_decay * circle_list[i].vy;}
+            //if (circle_list[i].vy < 0) {circle_list[i].vy -= speed_decay * circle_list[i].vy;}
             circle_list[i].collision_cooldown--;
         }
 
